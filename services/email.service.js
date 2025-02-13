@@ -1,5 +1,4 @@
 import nodemailer from 'nodemailer';
-import cron from 'node-cron';
 
 import { EMAIL_SERVICE, EMAIL_ADDRESS, EMAIL_PASSWORD, BASE_URL } from '../config/env.js';
 
@@ -28,17 +27,17 @@ const sendVerificationEmail = (email, verificationToken) => {
     }
   });
 };
-
 const sendGuideEmail = (email) => {
-  const date24HoursLater = new Date();
-  date24HoursLater.setHours(date24HoursLater.getHours() + 24);
-  cron.schedule(date24HoursLater, () => {
+  const time24HoursLater = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
+
+  setTimeout(() => {
     const mailOptions = {
       from: EMAIL_ADDRESS,
       to: email,
       subject: 'Guía de la aplicación',
       text: `Hola, gracias por registrarte en nuestra aplicación. Aquí tienes una guía para comenzar a usarla.`,
     };
+
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.log('Error al enviar el correo:', error);
@@ -46,7 +45,7 @@ const sendGuideEmail = (email) => {
         console.log('Correo enviado: ' + info.response);
       }
     });
-  });
+  }, time24HoursLater); // Ejecutar después de 24 horas
 };
 
 export { sendVerificationEmail, sendGuideEmail };

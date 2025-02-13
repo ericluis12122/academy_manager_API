@@ -5,6 +5,6 @@ const authRouter = Router();
 // Path /auths
 authRouter.post('/sign_up', SignUp);
 authRouter.post('/sign_in', SignIn);
-authRouter.post('/verify_email', VerifyEmail);
+authRouter.get('/verify_email/:token', VerifyEmail);
 
 export default authRouter;

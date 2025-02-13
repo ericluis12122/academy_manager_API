@@ -57,7 +57,7 @@ export const SignIn = async (req, res, next) => {
         const {email, password} = req.body;
         // Check if user exists
         const user = await User.findOne({ email });
-        if(!user || !user.VerifyEmail) {
+        if(!user || !user.emailVerified) {
             const error = new Error('User not found');
             error.statusCode = 404;
             throw error;
@@ -103,7 +103,7 @@ export const VerifyEmail = async (req, res, next) => {
         }
         
         user.verificationToken = null;
-        user.isVerified = true;
+        user.emailVerified = true;
         await user.save();
         
         res.status(200).json({

@@ -176,87 +176,71 @@ El modelo `Result` almacena los resultados de los exámenes realizados por los u
 ## Conclusión
 
 La elección de MongoDB y Mongoose proporciona una solución eficiente y escalable para gestionar los datos de la aplicación. Los modelos definidos garantizan una estructura clara y consistente de los datos, mientras que las validaciones aseguran la integridad de la información almacenada. Esta arquitectura permite una fácil expansión y mantenimiento del sistema, cumpliendo con los requisitos funcionales establecidos.
-# Descripcion de los Endpoints
+# Descripción de los Endpoints
+
 ## Auth
-Todas las rutas de autenticación están bajo el prefijo:
-```
-/auths
-```
 
-### **1. Registro de usuario**
-#### **Endpoint:**
-```
-POST /auths/sign_up
-```
-#### **Descripción:**
-Este endpoint permite registrar un nuevo usuario en la aplicación.
+Todas las rutas de autenticación están bajo el prefijo: */auths*
 
-#### **Cuerpo de la solicitud (JSON):**
-```json
+### 1. Registro de usuario
+**Endpoint:** POST */auths/sign_up*
+**Descripción:** Este endpoint permite registrar un nuevo usuario en la aplicación.
+**Cuerpo de la solicitud (JSON):**
+```
 {
   "name": "tester1",
   "email": "tester1@example.com",
   "password": "securepassword"
 }
 ```
-
-#### **Flujo del proceso:**
+**Flujo del proceso:**
 1. Verifica si el usuario ya existe en la base de datos.
-2. Si no existe, cifra la contraseña usando `bcryptjs`.
-3. Crea un nuevo usuario en la base de datos utilizando una transacción de MongoDB.
-4. Genera un token JWT para el usuario.
-5. Devuelve una respuesta con el usuario registrado y el token.
-
-#### **Respuestas:**
+2. Si no existe, cifra la contraseña usando bcryptjs.
+3. Genera un token de verificación utilizando crypto.
+4. Crea un nuevo usuario en la base de datos con el token de verificación.
+5. Envía un correo al email del usuario con un link de verificación y programa el envio de una una guía de bienvenida en 24 horas.
+6. Devuelve una respuesta con el usuario registrado.
+Respuestas:
 - **201 Created:** Usuario registrado con éxito.
-  ```json
+```
   {
     "success": true,
     "message": "User created successfully",
     "data": {
-      "token": "jwt_token",
-      "user": {
-        "_id": "user_id",
-        "name": "tester1",
-        "email": "tester1@example.com",
-        "role": "user"
-      }
+      "_id": "user_id",
+      "name": "tester1",
+      "email": "tester1@example.com",
+      "role": "user"
     }
   }
   ```
 - **409 Conflict:** El usuario ya existe.
-  ```json
+```
   {
     "success": false,
     "message": "User already exists"
   }
-  ```
-
-### **2. Inicio de sesión**
-#### **Endpoint:**
 ```
-POST /auths/sign_in
+### 2. Inicio de sesión
+**Endpoint:** POST */auths/sign_in*
+**Descripción:** Permite a un usuario existente autenticarse en la aplicación.
+**Cuerpo de la solicitud (JSON):**
 ```
-#### **Descripción:**
-Permite a un usuario existente autenticarse en la aplicación.
-
-#### **Cuerpo de la solicitud (JSON):**
-```json
 {
   "email": "tester1@example.com",
   "password": "securepassword"
 }
 ```
-
-#### **Flujo del proceso:**
+**Flujo del proceso:**
 1. Verifica si el usuario existe en la base de datos.
-2. Compara la contraseña ingresada con la almacenada usando `bcryptjs`.
-3. Si la contraseña es válida, genera un token JWT.
-4. Devuelve una respuesta con el usuario autenticado y el token.
+2. Verifica si el usuario ha sido verificado por correo electrónico.
+3. Compara la contraseña ingresada con la almacenada usando bcryptjs.
+4. Si la contraseña es válida, genera un token JWT.
+5. Devuelve una respuesta con el usuario autenticado y el token.
 
-#### **Respuestas:**
+**Respuestas:**
 - **200 OK:** Usuario autenticado con éxito.
-  ```json
+```
   {
     "success": true,
     "message": "User signed in successfully",
@@ -270,29 +254,58 @@ Permite a un usuario existente autenticarse en la aplicación.
       }
     }
   }
-  ```
-- **404 Not Found:** El usuario no existe.
-  ```json
+```
+- **404 Not Found:** El usuario no existe o no está verificado.
+```
   {
     "success": false,
     "message": "User not found"
   }
-  ```
+```
 - **401 Unauthorized:** Contraseña incorrecta.
-  ```json
+```
   {
     "success": false,
     "message": "Invalid password"
   }
   ```
 
----
+### 3. Verificación de correo electrónico
+**Endpoint:** GET /auths/verify_email/:token
 
-### **Ejemplo de registro y autenticación de múltiples usuarios**
+**Descripción:** Este endpoint permite verificar el correo electrónico de un usuario mediante un token de verificación enviado por correo.
+
+**Parámetros de la URL:**
+- token: Token de verificación generado durante el registro.
+
+**Flujo del proceso:**
+1. Busca al usuario en la base de datos utilizando el token de verificación.
+2. Si el token es válido, marca al usuario como verificado (emailVerified = true) y elimina el token de verificación.
+3. Guarda los cambios en la base de datos.
+4. Devuelve una respuesta indicando que el correo electrónico ha sido verificado.
+
+**Respuestas:**
+- **200 OK:** Correo electrónico verificado con éxito.
+```
+  {
+    "success": true,
+    "message": "Email verified successfully. You can now log in."
+  }
+```
+- **400 Bad Request**: Token de verificación inválido o expirado.
+```
+  {
+    "success": false,
+    "message": "Invalid or expired verification token"
+  }
+```
+
+## Ejemplo de registro y autenticación de múltiples usuarios
+
 Para probar la API con varios usuarios, puedes enviar las siguientes solicitudes:
 
-#### **Registro de otro usuario (`tester2`)**
-```json
+Registro de otro usuario (tester2)
+```
 {
   "name": "tester2",
   "email": "tester2@example.com",
@@ -300,21 +313,19 @@ Para probar la API con varios usuarios, puedes enviar las siguientes solicitudes
 }
 ```
 
-#### **Inicio de sesión de `tester2`**
-```json
+Inicio de sesión de tester2
+```
 {
   "email": "tester2@example.com",
   "password": "mypassword"
 }
 ```
 
----
-
-### **Notas adicionales:**
-- Se utiliza `jsonwebtoken` para la generación de tokens.
-- `bcryptjs` se emplea para cifrar y comparar contraseñas de manera segura.
-- Se usa `mongoose.startSession()` para manejar transacciones al registrar un usuario.
-
+## Notas adicionales
+- Se utiliza jsonwebtoken para la generación de tokens JWT.
+- bcryptjs se emplea para cifrar y comparar contraseñas de manera segura.
+- mongoose.startSession() se usa para manejar transacciones al registrar un usuario, asegurando la consistencia de los datos.
+- Se envían correos electrónicos utilizando el servicio sendVerificationEmail y sendGuideEmail.
 ## Users
 
 A continuación, se detalla la funcionalidad y uso de los endpoints relacionados con la gestión de usuarios en la API.
